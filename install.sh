@@ -1,30 +1,37 @@
 #!/usr/bin/bash
 
 # install packages for docker
-yum install -y yum-utils device-mapper-persistent-data lvm2
+sudo yum install -y yum-utils
 
 # docker repository
-yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 
 # yum update and install docker
-yum update -y && yum install -y docker-ce
+sudo yum update -y && sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-mkdir /etc/docker
-cat <<EOF | sudo tee /etc/docker/daemon.json
-{
-  "exec-opts": ["native.cgroupdriver=systemd"],
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "100m"
-  },
-  "storage-driver": "overlay2"
-}
-EOF
+sudo mkdir -p /etc/containerd
+sudo containerd config default | sudo tee /etc/containerd/config.toml
 
-systemctl enable docker
-systemctl daemon-reload
-systemctl restart docker
+sudo systemctl enable --now docker
+
+# Backup the original file
+sudo cp /etc/containerd/config.toml /etc/containerd/config.toml.backup
+
+# Update the configuration
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+
+# kubernetes repository
+sudo bash -c 'cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+exclude=kubelet kubeadm kubectl
+EOF'
 
 # install kubernetes
-yum install -y --disableexcludes=kubernetes kubeadm kubectl kubelet
-systemctl enable --now kubelet
+sudo yum install -y --disableexcludes=kubernetes kubeadm kubectl kubelet
+sudo systemctl enable --now kubelet

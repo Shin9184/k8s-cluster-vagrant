@@ -6,7 +6,7 @@ Vagrant.configure("2") do |config|
   ### Master Node ####
 
   config.vm.define "k8s-master" do |master|
-    master.vm.box = "centos/7"
+    master.vm.box = "generic/centos8"
     master.vm.provider "virtualbox" do |vb|
       vb.name = "k8s-master"
       vb.cpus = 2
@@ -26,7 +26,7 @@ Vagrant.configure("2") do |config|
 
   (1..2).each do |i|
     config.vm.define "k8s-worker#{i}" do |worker|
-      worker.vm.box = "centos/7"
+      worker.vm.box = "generic/centos8"
       worker.vm.provider "virtualbox" do |vb|
         vb.name = "k8s-worker#{i}"
         vb.cpus = 1
